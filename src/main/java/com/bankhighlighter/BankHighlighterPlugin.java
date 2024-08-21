@@ -38,7 +38,7 @@ import net.runelite.client.util.ColorUtil;
 	name = "Bank Highlighter",
 	description = "About\n" +
 			"Bank Highlighter, inspired by RuneLite's \"Inventory Tags,\" lets you color-code items in your bank or inventory (while the bank is open) for easier visibility. This feature is particularly useful for organizing skill/combat gear sets and quickly finding the items you need.",
-	tags = {"highlight", "items", "overlay", "tagging", "bank"},
+	tags = {"highlight", "items", "overlay", "tagging", "bank"}
 )
 @Slf4j
 public class BankHighlighterPlugin extends Plugin
