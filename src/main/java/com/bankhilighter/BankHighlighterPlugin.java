@@ -37,7 +37,7 @@ import net.runelite.client.util.ColorUtil;
 @PluginDescriptor(
 	name = "Bank Highlighter",
 	description = "About\n" +
-			"Bank item highlighter - based from Runelite 'Inventory Tags'. Allowing you to highlight items in your bank (or inventory whilst bank is open) a colour to make them easier to see, e.g. skills sets.",
+			"Bank Highlighter, inspired by RuneLite's \"Inventory Tags,\" lets you color-code items in your bank or inventory (while the bank is open) for easier visibility. This feature is particularly useful for organizing skill/combat gear sets and quickly finding the items you need.",
 	tags = {"highlight", "items", "overlay", "tagging", "bank"},
 	enabledByDefault = false
 )
