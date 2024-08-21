@@ -160,7 +160,7 @@ public class BankHighlighterPlugin extends Plugin
 				final BankHighlighterTag tag = getTag(itemId);
 
 				final MenuEntry parent = client.createMenuEntry(idx)
-					.setOption("Bank tag")
+					.setOption("Bank Highlight")
 					.setTarget(entry.getTarget())
 					.setType(MenuAction.RUNELITE);
 				final Menu submenu = parent.createSubMenu();
