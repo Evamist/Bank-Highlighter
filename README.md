@@ -1,2 +1,2 @@
 # Bank Highlighter
-Inspired by "Inventory Tags" plugin, by enabling Bank Highlighter you can customize your bank items by highlighting each item a chosen colour. Hold shift and right click 'Bank Highlight' before choosing your colour. Great for keeping gear/skill sets organised and visible.
+Building on the concept of the "Inventory Tags" plugin, the Bank Highlighter feature lets you personalize your bank by highlighting items with your chosen colors. Simply hold Shift, right-click on 'Bank Highlight,' and select your desired color. This tool is perfect for organizing and easily identifying gear and skill sets in your bank.
