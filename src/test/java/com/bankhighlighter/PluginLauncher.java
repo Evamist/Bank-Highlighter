@@ -1,4 +1,4 @@
-package com.bankhilighter;
+package com.bankhighlighter;
 
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;

@@ -1,4 +1,4 @@
-package com.bankhilighter;
+package com.bankhighlighter;
 
 import com.google.gson.Gson;
 import com.google.inject.Provides;

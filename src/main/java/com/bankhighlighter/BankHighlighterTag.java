@@ -1,4 +1,4 @@
-package com.bankhilighter;
+package com.bankhighlighter;
 
 import java.awt.Color;
 import lombok.Data;

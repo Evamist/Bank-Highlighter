@@ -1,4 +1,4 @@
-package com.bankhilighter;
+package com.bankhighlighter;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
@@ -9,7 +9,7 @@ import net.runelite.client.config.Range;
 @ConfigGroup(BankHighlighterConfig.GROUP)
 public interface BankHighlighterConfig extends Config
 {
-	String GROUP = "com/bankhilighter";
+	String GROUP = "com/bankhighlighter";
 
 	@ConfigSection(
 		name = "Tag display mode",
