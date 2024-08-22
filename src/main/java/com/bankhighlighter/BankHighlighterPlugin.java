@@ -37,13 +37,12 @@ import net.runelite.client.util.ColorUtil;
 @PluginDescriptor(
 	name = "Bank Highlighter",
 	description = "About\n" +
-			"Bank Highlighter, inspired by RuneLite's \"Inventory Tags,\" lets you color-code items in your bank or inventory (while the bank is open) for easier visibility. This feature is particularly useful for organizing skill/combat gear sets and quickly finding the items you need.",
+			"Lets you color-code items in your bank or inventory (while the bank is open) for easier visibility. This feature is particularly useful for organizing skill/combat gear sets and quickly finding the items you need. Built from the original \"Inventory Tags,\" coding.",
 	tags = {"highlight", "items", "overlay", "tagging", "bank"}
 )
 @Slf4j
 public class BankHighlighterPlugin extends Plugin
 {
-	private static final String ITEM_KEY_PREFIX = "item_";
 	private static final String TAG_KEY_PREFIX = "tag_";
 
 	@Inject
@@ -74,7 +73,6 @@ public class BankHighlighterPlugin extends Plugin
 	protected void startUp()
 	{
 		overlayManager.add(overlay);
-		convertConfig();
 	}
 
 	@Override
@@ -103,30 +101,6 @@ public class BankHighlighterPlugin extends Plugin
 	void unsetTag(int itemId)
 	{
 		configManager.unsetConfiguration(BankHighlighterConfig.GROUP, TAG_KEY_PREFIX + itemId);
-	}
-
-	private void convertConfig()
-	{
-		String migrated = configManager.getConfiguration(BankHighlighterConfig.GROUP, "migrated");
-		if (!"1".equals(migrated))
-		{
-			return;
-		}
-
-		int removed = 0;
-		List<String> keys = configManager.getConfigurationKeys(BankHighlighterConfig.GROUP + "." + ITEM_KEY_PREFIX);
-		for (String key : keys)
-		{
-			String[] str = key.split("\\.", 2);
-			if (str.length == 2)
-			{
-				configManager.unsetConfiguration(str[0], str[1]);
-				++removed;
-			}
-		}
-
-		log.debug("Removed {} old tags", removed);
-		configManager.setConfiguration(BankHighlighterConfig.GROUP, "migrated", "2");
 	}
 
 	@Subscribe
