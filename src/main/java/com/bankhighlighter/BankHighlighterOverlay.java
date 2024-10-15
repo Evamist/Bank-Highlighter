@@ -32,9 +32,8 @@ class BankHighlighterOverlay extends WidgetItemOverlay
 		this.config = config;
 		showOnBank();
 		showOnInterfaces(
-			InterfaceID.BANK_INVENTORY,
-			InterfaceID.BANK_PIN
-		);
+			InterfaceID.BANK_INVENTORY
+				);
 		fillCache = CacheBuilder.newBuilder()
 			.concurrencyLevel(1)
 			.maximumSize(32)
