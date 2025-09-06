@@ -96,11 +96,13 @@ public class BankHighlighterPlugin extends Plugin
 	{
 		String json = gson.toJson(tag);
 		configManager.setConfiguration(BankHighlighterConfig.GROUP, TAG_KEY_PREFIX + itemId, json);
+		overlay.invalidateCache();
 	}
 
 	void unsetTag(int itemId)
 	{
 		configManager.unsetConfiguration(BankHighlighterConfig.GROUP, TAG_KEY_PREFIX + itemId);
+		overlay.invalidateCache();
 	}
 
 	@Subscribe
@@ -121,67 +123,93 @@ public class BankHighlighterPlugin extends Plugin
 		}
 
 		final MenuEntry[] entries = event.getMenuEntries();
+
 		for (int idx = entries.length - 1; idx >= 0; --idx)
 		{
 			final MenuEntry entry = entries[idx];
 			final Widget w = entry.getWidget();
-
-			if (w != null && WidgetUtil.componentToInterface(w.getId()) == InterfaceID.BANK
-				&& "Examine".equals(entry.getOption()) && entry.getIdentifier() == 10)
+			if (w == null)
 			{
-				final int itemId = w.getItemId();
-				final BankHighlighterTag tag = getTag(itemId);
+				continue;
+			}
 
-				final MenuEntry parent = client.createMenuEntry(idx)
-					.setOption("Bank Highlight")
-					.setTarget(entry.getTarget())
-					.setType(MenuAction.RUNELITE);
-				final Menu submenu = parent.createSubMenu();
+			final int iface = WidgetUtil.componentToInterface(w.getId());
+			final boolean isBankIface = iface == InterfaceID.BANK || iface == InterfaceID.BANK_INVENTORY;
+			if (!isBankIface)
+			{
+				continue;
+			}
 
-				Set<Color> bankColors = new HashSet<>(getColorsFromItemContainer(BANK));
-				for (Color color : bankColors)
+			final int itemId = entry.getItemId() > 0 ? entry.getItemId() : w.getItemId();
+			if (itemId <= 0)
+			{
+				continue;
+			}
+
+			final BankHighlighterTag tag = getTag(itemId);
+
+			final MenuEntry parent = client.createMenuEntry(idx)
+				.setOption("Bank Highlight")
+				.setTarget(entry.getTarget())
+				.setType(MenuAction.RUNELITE);
+
+			final Menu submenu = parent.createSubMenu();
+
+			Set<Color> bankColors = new HashSet<>(getColorsFromItemContainer(BANK));
+			for (Color color : bankColors)
+			{
+				if (tag == null || !color.equals(tag.getColor()))
 				{
-					if (tag == null || !tag.color.equals(color))
-					{
-						submenu.createMenuEntry(0)
-							.setOption(ColorUtil.prependColorTag("Color", color))
-							.setType(MenuAction.RUNELITE)
-							.onClick(e ->
-							{
-								BankHighlighterTag t = new BankHighlighterTag();
-								t.color = color;
-								setTag(itemId, t);
-							});
-					}
+					submenu.createMenuEntry(0)
+						.setOption(ColorUtil.prependColorTag("Color", color))
+						.setType(MenuAction.RUNELITE)
+						.onClick(e ->
+						{
+							BankHighlighterTag t = new BankHighlighterTag();
+							t.setColor(color);
+							setTag(itemId, t);
+							overlay.invalidateCache();
+						});
 				}
+			}
 
+			// Manual picker
+			submenu.createMenuEntry(0)
+				.setOption("Pick")
+				.setType(MenuAction.RUNELITE)
+				.onClick(e ->
+				{
+					Color base = (tag == null || tag.getColor() == null) ? Color.WHITE : tag.getColor();
+					SwingUtilities.invokeLater(() ->
+					{
+						RuneliteColorPicker colorPicker = colorPickerManager.create(
+							SwingUtilities.windowForComponent((Applet) client),
+							base,
+							"Bank Highlight",
+							true
+						);
+						colorPicker.setOnClose(c ->
+						{
+							BankHighlighterTag t = new BankHighlighterTag();
+							t.setColor(c);
+							setTag(itemId, t);
+							overlay.invalidateCache();
+						});
+						colorPicker.setVisible(true);
+					});
+				});
+
+			// Reset existing tag
+			if (tag != null)
+			{
 				submenu.createMenuEntry(0)
-					.setOption("Pick")
+					.setOption("Reset")
 					.setType(MenuAction.RUNELITE)
 					.onClick(e ->
 					{
-						Color color = tag == null ? Color.WHITE : tag.color;
-						SwingUtilities.invokeLater(() ->
-						{
-							RuneliteColorPicker colorPicker = colorPickerManager.create(SwingUtilities.windowForComponent((Applet) client),
-								color, "Bank Highlight", true);
-							colorPicker.setOnClose(c ->
-							{
-								BankHighlighterTag t = new BankHighlighterTag();
-								t.color = c;
-								setTag(itemId, t);
-							});
-							colorPicker.setVisible(true);
-						});
+						unsetTag(itemId);
+						overlay.invalidateCache();
 					});
-
-				if (tag != null)
-				{
-					submenu.createMenuEntry(0)
-						.setOption("Reset")
-						.setType(MenuAction.RUNELITE)
-						.onClick(e -> unsetTag(itemId));
-				}
 			}
 		}
 	}
