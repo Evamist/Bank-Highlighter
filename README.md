@@ -3,7 +3,9 @@
 Bank Highlighter is a RuneLite plugin that lets you apply colored highlights to bank items for quick visual grouping.
 
 <p align="center">
-  <img src="https://i.imgur.com/02lFj5r.png" alt="Bank Highlighter"/>
+  <a href="https://github.com/user-attachments/assets/76e877ba-7fe0-4eb0-914d-7a45155e7d97">
+    <img src="https://github.com/user-attachments/assets/76e877ba-7fe0-4eb0-914d-7a45155e7d97" alt="BankHighlighterScreenShot">
+  </a>
 </p>
 
 ## Install
