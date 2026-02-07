@@ -12,11 +12,37 @@ public interface BankHighlighterConfig extends Config
 	String GROUP = "com/bankhighlighter";
 
 	@ConfigSection(
-		name = "Tag display mode",
-		description = "How tags are displayed in the bank",
+		name = "Menu",
+		description = "Menu entry options",
 		position = 0
 	)
+	String menuSection = "menuSection";
+
+	@ConfigSection(
+		name = "Tag display mode",
+		description = "How tags are displayed in the bank",
+		position = 1
+	)
 	String tagStyleSection = "tagStyleSection";
+
+	@ConfigSection(
+		name = "Integration",
+		description = "Integrations with other plugins",
+		position = 2
+	)
+	String integrationSection = "integrationSection";
+
+	@ConfigItem(
+		position = 0,
+		keyName = "requireShiftForMenu",
+		name = "Require Shift",
+		description = "Require holding Shift to show Bank Highlight menu entries.",
+		section = menuSection
+	)
+	default boolean requireShiftForMenu()
+	{
+		return false;
+	}
 
 	@ConfigItem(
 		position = 0,
@@ -67,5 +93,17 @@ public interface BankHighlighterConfig extends Config
 	default int fillOpacity()
 	{
 		return 50;
+	}
+
+	@ConfigItem(
+		keyName = "useInventoryTagsConfig",
+		name = "Share with Inventory Tags",
+		description = "Use the Inventory Tags plugin config for highlight colors so you don't need to tag items twice.",
+		position = 0,
+		section = integrationSection
+	)
+	default boolean useInventoryTagsConfig()
+	{
+		return false;
 	}
 }

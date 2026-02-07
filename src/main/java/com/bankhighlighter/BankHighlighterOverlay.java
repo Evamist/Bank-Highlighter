@@ -8,7 +8,6 @@ import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import javax.inject.Inject;
-import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.WidgetItem;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.WidgetItemOverlay;
@@ -31,9 +30,7 @@ class BankHighlighterOverlay extends WidgetItemOverlay
 		this.plugin = plugin;
 		this.config = config;
 		showOnBank();
-		showOnInterfaces(
-			InterfaceID.BANK_INVENTORY
-				);
+		showOnInventory();
 		fillCache = CacheBuilder.newBuilder()
 			.concurrencyLevel(1)
 			.maximumSize(32)
@@ -47,25 +44,42 @@ class BankHighlighterOverlay extends WidgetItemOverlay
 	@Override
 	public void renderItemOverlay(Graphics2D graphics, int itemId, WidgetItem widgetItem)
 	{
-		final BankHighlighterTag tag = getTag(itemId);
+		final int resolvedItemId = itemId > 0 ? itemId : widgetItem.getId();
+		if (resolvedItemId <= 0)
+		{
+			return;
+		}
+
+		final BankHighlighterTag tag = getTag(resolvedItemId);
 		if (tag == null || tag.color == null)
 		{
 			return;
 		}
 
 		final Color color = tag.color;
+		int quantity = widgetItem.getQuantity();
+		if (quantity <= 0)
+		{
+			quantity = 1;
+		}
 
 		Rectangle bounds = widgetItem.getCanvasBounds();
 		if (config.showTagOutline())
 		{
-			final BufferedImage outline = itemManager.getItemOutline(itemId, widgetItem.getQuantity(), color);
-			graphics.drawImage(outline, (int) bounds.getX(), (int) bounds.getY(), null);
+			final BufferedImage outline = itemManager.getItemOutline(resolvedItemId, quantity, color);
+			if (outline != null)
+			{
+				graphics.drawImage(outline, (int) bounds.getX(), (int) bounds.getY(), null);
+			}
 		}
 
 		if (config.showTagFill())
 		{
-			final Image image = getFillImage(color, widgetItem.getId(), widgetItem.getQuantity());
-			graphics.drawImage(image, (int) bounds.getX(), (int) bounds.getY(), null);
+			final Image image = getFillImage(color, resolvedItemId, quantity);
+			if (image != null)
+			{
+				graphics.drawImage(image, (int) bounds.getX(), (int) bounds.getY(), null);
+			}
 		}
 
 		if (config.showTagUnderline())
