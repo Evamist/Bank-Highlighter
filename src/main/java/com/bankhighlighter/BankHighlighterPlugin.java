@@ -2,7 +2,6 @@ package com.bankhighlighter;
 
 import com.google.gson.Gson;
 import com.google.inject.Provides;
-import java.applet.Applet;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -12,8 +11,6 @@ import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
-import net.runelite.api.InventoryID;
-import static net.runelite.api.InventoryID.BANK;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.KeyCode;
@@ -21,7 +18,10 @@ import net.runelite.api.Menu;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.events.MenuOpened;
-import net.runelite.api.widgets.InterfaceID;
+import net.runelite.api.events.WidgetClosed;
+import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetUtil;
 import net.runelite.client.config.ConfigManager;
@@ -34,16 +34,16 @@ import net.runelite.client.ui.components.colorpicker.RuneliteColorPicker;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ColorUtil;
 
+@Slf4j
 @PluginDescriptor(
 	name = "Bank Highlighter",
-	description = "About\n" +
-			"Lets you color-code items in your bank or inventory (while the bank is open) for easier visibility. This feature is particularly useful for organizing skill/combat gear sets and quickly finding the items you need. Built from the original \"Inventory Tags,\" coding.",
-	tags = {"highlight", "items", "overlay", "tagging", "bank"}
+	description = "Adds customizable highlighting to items in the bank",
+	enabledByDefault = false
 )
-@Slf4j
 public class BankHighlighterPlugin extends Plugin
 {
 	private static final String TAG_KEY_PREFIX = "tag_";
+	private static final String INVENTORY_TAGS_GROUP = "inventorytags";
 
 	@Inject
 	private Client client;
@@ -61,10 +61,15 @@ public class BankHighlighterPlugin extends Plugin
 	private Gson gson;
 
 	@Inject
+	private BankHighlighterConfig config;
+
+	@Inject
 	private ColorPickerManager colorPickerManager;
 
+	private boolean bankOpen;
+
 	@Provides
-	BankHighlighterConfig provideConfig(ConfigManager configManager)
+	BankHighlighterConfig getConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(BankHighlighterConfig.class);
 	}
@@ -81,34 +86,40 @@ public class BankHighlighterPlugin extends Plugin
 		overlayManager.remove(overlay);
 	}
 
-	BankHighlighterTag getTag(int itemId)
+	public void setTag(int itemId, BankHighlighterTag tag)
 	{
-		String tag = configManager.getConfiguration(BankHighlighterConfig.GROUP, TAG_KEY_PREFIX + itemId);
-		if (tag == null || tag.isEmpty())
+		String key = TAG_KEY_PREFIX + itemId;
+		String value = gson.toJson(tag);
+		configManager.setConfiguration(getConfigGroup(), key, value);
+	}
+
+	public void unsetTag(int itemId)
+	{
+		String key = TAG_KEY_PREFIX + itemId;
+		configManager.unsetConfiguration(getConfigGroup(), key);
+	}
+
+	public BankHighlighterTag getTag(int itemId)
+	{
+		String key = TAG_KEY_PREFIX + itemId;
+		String json = configManager.getConfiguration(getConfigGroup(), key);
+		if (json == null)
 		{
 			return null;
 		}
-
-		return gson.fromJson(tag, BankHighlighterTag.class);
+		return gson.fromJson(json, BankHighlighterTag.class);
 	}
 
-	void setTag(int itemId, BankHighlighterTag tag)
+	private String getConfigGroup()
 	{
-		String json = gson.toJson(tag);
-		configManager.setConfiguration(BankHighlighterConfig.GROUP, TAG_KEY_PREFIX + itemId, json);
-		overlay.invalidateCache();
-	}
-
-	void unsetTag(int itemId)
-	{
-		configManager.unsetConfiguration(BankHighlighterConfig.GROUP, TAG_KEY_PREFIX + itemId);
-		overlay.invalidateCache();
+		return config.useInventoryTagsConfig() ? INVENTORY_TAGS_GROUP : BankHighlighterConfig.GROUP;
 	}
 
 	@Subscribe
-	public void onConfigChanged(ConfigChanged configChanged)
+	public void onConfigChanged(final ConfigChanged event)
 	{
-		if (configChanged.getGroup().equals(BankHighlighterConfig.GROUP))
+		if (event.getGroup().equals(BankHighlighterConfig.GROUP)
+			|| (config.useInventoryTagsConfig() && event.getGroup().equals(INVENTORY_TAGS_GROUP)))
 		{
 			overlay.invalidateCache();
 		}
@@ -117,13 +128,12 @@ public class BankHighlighterPlugin extends Plugin
 	@Subscribe
 	public void onMenuOpened(final MenuOpened event)
 	{
-		if (!client.isKeyPressed(KeyCode.KC_SHIFT))
+		if (config.requireShiftForMenu() && !client.isKeyPressed(KeyCode.KC_SHIFT))
 		{
 			return;
 		}
 
 		final MenuEntry[] entries = event.getMenuEntries();
-
 		for (int idx = entries.length - 1; idx >= 0; --idx)
 		{
 			final MenuEntry entry = entries[idx];
@@ -134,8 +144,8 @@ public class BankHighlighterPlugin extends Plugin
 			}
 
 			final int iface = WidgetUtil.componentToInterface(w.getId());
-			final boolean isBankIface = iface == InterfaceID.BANK || iface == InterfaceID.BANK_INVENTORY;
-			if (!isBankIface)
+			final boolean isBankIface = iface == InterfaceID.BANKMAIN || iface == InterfaceID.BANKSIDE;
+			if (!isBankIface && !bankOpen)
 			{
 				continue;
 			}
@@ -148,14 +158,14 @@ public class BankHighlighterPlugin extends Plugin
 
 			final BankHighlighterTag tag = getTag(itemId);
 
-			final MenuEntry parent = client.createMenuEntry(idx)
+			final MenuEntry parent = client.getMenu().createMenuEntry(idx)
 				.setOption("Bank Highlight")
 				.setTarget(entry.getTarget())
 				.setType(MenuAction.RUNELITE);
 
 			final Menu submenu = parent.createSubMenu();
 
-			Set<Color> bankColors = new HashSet<>(getColorsFromItemContainer(BANK));
+			Set<Color> bankColors = new HashSet<>(getColorsFromItemContainer(InventoryID.BANK));
 			for (Color color : bankColors)
 			{
 				if (tag == null || !color.equals(tag.getColor()))
@@ -183,7 +193,7 @@ public class BankHighlighterPlugin extends Plugin
 					SwingUtilities.invokeLater(() ->
 					{
 						RuneliteColorPicker colorPicker = colorPickerManager.create(
-							SwingUtilities.windowForComponent((Applet) client),
+							SwingUtilities.windowForComponent(client.getCanvas()),
 							base,
 							"Bank Highlight",
 							true
@@ -214,22 +224,44 @@ public class BankHighlighterPlugin extends Plugin
 		}
 	}
 
-	private List<Color> getColorsFromItemContainer(InventoryID inventoryID)
+	@Subscribe
+	public void onWidgetLoaded(WidgetLoaded event)
+	{
+		if (event.getGroupId() == InterfaceID.BANKMAIN)
+		{
+			bankOpen = true;
+		}
+	}
+
+	@Subscribe
+	public void onWidgetClosed(WidgetClosed event)
+	{
+		if (event.getGroupId() == InterfaceID.BANKMAIN)
+		{
+			bankOpen = false;
+		}
+	}
+
+	private List<Color> getColorsFromItemContainer(final int inventoryId)
 	{
 		List<Color> colors = new ArrayList<>();
-		ItemContainer container = client.getItemContainer(inventoryID);
-		if (container != null)
+		final ItemContainer container = client.getItemContainer(inventoryId);
+		if (container == null)
 		{
-			for (Item item : container.getItems())
+			return colors;
+		}
+
+		for (Item item : container.getItems())
+		{
+			if (item == null || item.getId() <= 0)
 			{
-				BankHighlighterTag tag = getTag(item.getId());
-				if (tag != null && tag.color != null)
-				{
-					if (!colors.contains(tag.color))
-					{
-						colors.add(tag.color);
-					}
-				}
+				continue;
+			}
+
+			final BankHighlighterTag tag = getTag(item.getId());
+			if (tag != null && tag.getColor() != null && !colors.contains(tag.getColor()))
+			{
+				colors.add(tag.getColor());
 			}
 		}
 		return colors;
