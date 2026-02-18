@@ -37,8 +37,7 @@ import net.runelite.client.util.ColorUtil;
 @Slf4j
 @PluginDescriptor(
 	name = "Bank Highlighter",
-	description = "Adds customizable highlighting to items in the bank",
-	enabledByDefault = false
+	description = "Adds customizable highlighting to items in the bank"
 )
 public class BankHighlighterPlugin extends Plugin
 {
