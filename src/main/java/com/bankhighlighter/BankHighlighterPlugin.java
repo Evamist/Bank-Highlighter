@@ -133,6 +133,7 @@ public class BankHighlighterPlugin extends Plugin
 		}
 
 		final MenuEntry[] entries = event.getMenuEntries();
+		final Set<Long> seenItems = new HashSet<>();
 		for (int idx = entries.length - 1; idx >= 0; --idx)
 		{
 			final MenuEntry entry = entries[idx];
@@ -151,6 +152,12 @@ public class BankHighlighterPlugin extends Plugin
 
 			final int itemId = entry.getItemId() > 0 ? entry.getItemId() : w.getItemId();
 			if (itemId <= 0)
+			{
+				continue;
+			}
+
+			final long slotKey = (((long) w.getId()) << 32) ^ (itemId & 0xffffffffL);
+			if (!seenItems.add(slotKey))
 			{
 				continue;
 			}
@@ -239,6 +246,11 @@ public class BankHighlighterPlugin extends Plugin
 		{
 			bankOpen = false;
 		}
+	}
+
+	boolean isBankOpen()
+	{
+		return bankOpen;
 	}
 
 	private List<Color> getColorsFromItemContainer(final int inventoryId)

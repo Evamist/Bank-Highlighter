@@ -8,7 +8,10 @@ import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import javax.inject.Inject;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetItem;
+import net.runelite.api.widgets.WidgetUtil;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.WidgetItemOverlay;
 import net.runelite.client.util.ColorUtil;
@@ -44,6 +47,17 @@ class BankHighlighterOverlay extends WidgetItemOverlay
 	@Override
 	public void renderItemOverlay(Graphics2D graphics, int itemId, WidgetItem widgetItem)
 	{
+		final Widget widget = widgetItem.getWidget();
+		if (widget != null)
+		{
+			final int iface = WidgetUtil.componentToInterface(widget.getId());
+			final boolean isBankIface = iface == InterfaceID.BANKMAIN || iface == InterfaceID.BANKSIDE;
+			if (!isBankIface && !plugin.isBankOpen())
+			{
+				return;
+			}
+		}
+
 		final int resolvedItemId = itemId > 0 ? itemId : widgetItem.getId();
 		if (resolvedItemId <= 0)
 		{
